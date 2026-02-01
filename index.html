@@ -182,7 +182,7 @@
         <div id="rewindIndicator">◀◀ REWINDING ◀◀</div>
 
         <div id="controls">
-            ARROW KEYS to move · SPACE to jump · HOLD SHIFT to rewind time
+            ARROWS to move · SPACE to jump (x2) · HOLD SHIFT to rewind
         </div>
 
         <div id="rewindOverlay"></div>
@@ -356,6 +356,8 @@ class Player {
         this.scaleX = 1;
         this.scaleY = 1;
         this.coyoteTime = 0;
+        this.jumpCount = 0;
+        this.maxJumps = 2;
     }
 
     update() {
@@ -366,6 +368,7 @@ class Player {
         // Coyote Time (allow jumping shortly after falling off ledge)
         if (this.onGround) {
             this.coyoteTime = 6; // 6 frames grace period
+            this.jumpCount = 0;
         } else {
             this.coyoteTime--;
         }
@@ -395,14 +398,26 @@ class Player {
         }
 
         // Jumping
-        if (keys.jump && this.coyoteTime > 0 && !this.jumpHeld) {
-            this.vy = CONFIG.JUMP_FORCE * emotion.jumpMod;
-            this.onGround = false;
-            this.jumpHeld = true;
-            this.coyoteTime = 0; // Consume jump
-            spawnJumpParticles(this.x + this.width/2, this.y + this.height);
-            this.scaleX = 0.6;
-            this.scaleY = 1.4;
+        if (keys.jump && !this.jumpHeld) {
+            let jumped = false;
+            if (this.coyoteTime > 0) {
+                this.vy = CONFIG.JUMP_FORCE * emotion.jumpMod;
+                this.coyoteTime = 0;
+                this.jumpCount = 1;
+                jumped = true;
+            } else if (this.jumpCount < this.maxJumps) {
+                this.vy = CONFIG.JUMP_FORCE * emotion.jumpMod * 0.9;
+                this.jumpCount++;
+                jumped = true;
+            }
+
+            if (jumped) {
+                this.onGround = false;
+                this.jumpHeld = true;
+                spawnJumpParticles(this.x + this.width/2, this.y + this.height);
+                this.scaleX = 0.6;
+                this.scaleY = 1.4;
+            }
         }
         if (!keys.jump) {
             this.jumpHeld = false;
