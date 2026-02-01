@@ -215,9 +215,10 @@ const stars = Array.from({ length: 150 }, () => ({
 const CONFIG = {
     TILE_SIZE: 32,
     GRAVITY: 0.6,
-    JUMP_FORCE: -12,
+    JUMP_FORCE: -13,
     MOVE_SPEED: 5,
-    MAX_TIME_HISTORY: 600, // 10 seconds at 60fps
+    MAX_TIME_HISTORY: 1200, // Increased to 20 seconds
+    REWIND_SPEED: 3,        // Rewind 3x faster
     FRICTION: 0.85,
     AIR_RESISTANCE: 0.95
 };
@@ -275,7 +276,8 @@ const game = {
     particles: [],
     camera: { x: 0, y: 0 },
     ghostTrail: [],
-    shake: 0
+    shake: 0,
+    won: false
 };
 
 // -----------------------------------------------------------------------------
@@ -311,6 +313,9 @@ document.addEventListener('keydown', (e) => {
         case 'ShiftRight':
             keys.rewind = true;
             e.preventDefault();
+            break;
+        case 'KeyR':
+            if (game.won) location.reload();
             break;
     }
 });
@@ -425,7 +430,7 @@ class Player {
 
         // Variable jump height - release early for shorter jump
         if (!keys.jump && this.vy < 0) {
-            this.vy *= 0.5;
+            this.vy *= 0.6;
         }
 
         // Gravity
@@ -617,6 +622,10 @@ class Fragment {
             if (dist < this.radius + 20) {
                 this.collect();
                 game.shake = 5;
+                
+                if (game.fragmentsCollected === game.fragments.length) {
+                    game.won = true;
+                }
             }
         }
     }
@@ -746,7 +755,7 @@ const LEVEL_1 = {
         [1,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
         [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,1],
         [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
-        [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+        [1,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
         [1,0,0,0,0,0,0,0,0,0,2,2,2,2,0,0,0,0,0,0,2,2,2,2,0,0,3,0,0,1],
         [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,0,1],
         [1,1,1,1,1,1,1,0,0,0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1],
@@ -810,37 +819,40 @@ function recordTime() {
 }
 
 function rewindTime() {
-    if (game.timeHistory.length > 0) {
-        const state = game.timeHistory.pop();
-        game.player.setState(state.player);
+    // Rewind multiple frames per tick for speed
+    for (let i = 0; i < CONFIG.REWIND_SPEED; i++) {
+        if (game.timeHistory.length > 0) {
+            const state = game.timeHistory.pop();
+            game.player.setState(state.player);
 
-        // Note: Fragments are TIME-IMMUNE - they don't rewind!
-        // This is a key Braid mechanic - some things persist through time
+            // Visual effects (only once per frame to save performance)
+            if (i === 0) {
+                // Add ghost trail effect
+                game.ghostTrail.push({
+                    x: state.player.x,
+                    y: state.player.y,
+                    alpha: 0.5,
+                    width: game.player.width,
+                    height: game.player.height
+                });
 
-        // Add ghost trail effect
-        game.ghostTrail.push({
-            x: state.player.x,
-            y: state.player.y,
-            alpha: 0.5,
-            width: game.player.width,
-            height: game.player.height
-        });
+                // Limit ghost trail
+                if (game.ghostTrail.length > 20) {
+                    game.ghostTrail.shift();
+                }
 
-        // Limit ghost trail
-        if (game.ghostTrail.length > 20) {
-            game.ghostTrail.shift();
-        }
-
-        // Spawn rewind particles
-        if (Math.random() < 0.3) {
-            game.particles.push(new Particle(
-                game.player.x + game.player.width/2,
-                game.player.y + game.player.height/2,
-                (Math.random() - 0.5) * 3,
-                (Math.random() - 0.5) * 3,
-                '#4a9eff',
-                20
-            ));
+                // Spawn rewind particles
+                if (Math.random() < 0.3) {
+                    game.particles.push(new Particle(
+                        game.player.x + game.player.width/2,
+                        game.player.y + game.player.height/2,
+                        (Math.random() - 0.5) * 3,
+                        (Math.random() - 0.5) * 3,
+                        '#4a9eff',
+                        20
+                    ));
+                }
+            }
         }
     }
 }
@@ -883,9 +895,22 @@ function updateUI() {
 // RENDERING
 // -----------------------------------------------------------------------------
 function draw() {
+    // Apply rewind filter if active
+    if (game.isRewinding) {
+        ctx.filter = 'grayscale(100%) contrast(1.2) sepia(0.2)';
+    } else {
+        ctx.filter = 'none';
+    }
+
     // Clear
     ctx.fillStyle = '#0a0a0f';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // Ambient Emotion Tint
+    ctx.fillStyle = game.currentEmotion.color;
+    ctx.globalAlpha = 0.05;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.globalAlpha = 1;
 
     // Screen Shake
     ctx.save();
@@ -964,6 +989,23 @@ function draw() {
     }
 
     ctx.restore(); // End screen shake
+    
+    // Victory Screen
+    if (game.won) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = '#ffd700';
+        ctx.font = 'bold 48px Courier New';
+        ctx.textAlign = 'center';
+        ctx.fillText('MEMORY RESTORED', canvas.width/2, canvas.height/2 - 20);
+        
+        ctx.fillStyle = '#fff';
+        ctx.font = '16px Courier New';
+        ctx.fillText('All fragments collected.', canvas.width/2, canvas.height/2 + 20);
+        ctx.fillStyle = '#888';
+        ctx.fillText('Press R to restart', canvas.width/2, canvas.height/2 + 50);
+    }
 }
 
 // -----------------------------------------------------------------------------
