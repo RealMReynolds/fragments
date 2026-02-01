@@ -182,7 +182,7 @@
         <div id="rewindIndicator">◀◀ REWINDING ◀◀</div>
 
         <div id="controls">
-            ARROWS to move · SPACE to jump (x2) · HOLD SHIFT to rewind
+            ARROWS to move · SPACE to jump (x2) · HOLD SHIFT to rewind (makes you lighter!)
         </div>
 
         <div id="rewindOverlay"></div>
@@ -405,13 +405,18 @@ class Player {
         // Jumping
         if (keys.jump && !this.jumpHeld) {
             let jumped = false;
+            
+            // Time Weight Mechanic: Less history = Higher jump
+            const historyRatio = game.timeHistory.length / CONFIG.MAX_TIME_HISTORY;
+            const lightnessBonus = 1 + (1 - historyRatio) * 0.15; // Up to 15% boost
+
             if (this.coyoteTime > 0) {
-                this.vy = CONFIG.JUMP_FORCE * emotion.jumpMod;
+                this.vy = CONFIG.JUMP_FORCE * emotion.jumpMod * lightnessBonus;
                 this.coyoteTime = 0;
                 this.jumpCount = 1;
                 jumped = true;
             } else if (this.jumpCount < this.maxJumps) {
-                this.vy = CONFIG.JUMP_FORCE * emotion.jumpMod * 0.9;
+                this.vy = CONFIG.JUMP_FORCE * emotion.jumpMod * 0.9 * lightnessBonus;
                 this.jumpCount++;
                 jumped = true;
             }
