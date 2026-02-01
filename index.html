@@ -197,6 +197,18 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Helper for animation
+const lerp = (start, end, amt) => (1 - amt) * start + amt * end;
+
+// Starfield background
+const stars = Array.from({ length: 150 }, () => ({
+    x: Math.random() * 960,
+    y: Math.random() * 540,
+    size: Math.random() * 2,
+    alpha: Math.random(),
+    speed: Math.random() * 0.2 + 0.05
+}));
+
 // -----------------------------------------------------------------------------
 // CONFIGURATION
 // -----------------------------------------------------------------------------
@@ -262,7 +274,8 @@ const game = {
     currentEmotion: EMOTIONS.NORMAL,
     particles: [],
     camera: { x: 0, y: 0 },
-    ghostTrail: []
+    ghostTrail: [],
+    shake: 0
 };
 
 // -----------------------------------------------------------------------------
@@ -340,11 +353,18 @@ class Player {
         this.onGround = false;
         this.facingRight = true;
         this.jumpHeld = false;
+        this.scaleX = 1;
+        this.scaleY = 1;
     }
 
     update() {
         const emotion = game.currentEmotion;
         const speed = CONFIG.MOVE_SPEED * emotion.speedMod;
+        const wasOnGround = this.onGround;
+
+        // Squash and stretch recovery
+        this.scaleX = lerp(this.scaleX, 1, 0.2);
+        this.scaleY = lerp(this.scaleY, 1, 0.2);
 
         // Horizontal movement
         if (keys.left) {
@@ -372,6 +392,8 @@ class Player {
             this.onGround = false;
             this.jumpHeld = true;
             spawnJumpParticles(this.x + this.width/2, this.y + this.height);
+            this.scaleX = 0.6;
+            this.scaleY = 1.4;
         }
         if (!keys.jump) {
             this.jumpHeld = false;
@@ -399,6 +421,14 @@ class Player {
         // Fall death
         if (this.y > game.level.height * CONFIG.TILE_SIZE + 100) {
             this.respawn();
+        }
+
+        // Landing impact
+        if (!wasOnGround && this.onGround) {
+            this.scaleX = 1.4;
+            this.scaleY = 0.6;
+            game.shake = 4;
+            spawnJumpParticles(this.x + this.width/2, this.y + this.height);
         }
     }
 
@@ -511,21 +541,26 @@ class Player {
     draw() {
         const emotion = game.currentEmotion;
 
+        ctx.save();
+        // Pivot point for scaling (bottom center)
+        ctx.translate(this.x + this.width/2, this.y + this.height);
+        ctx.scale(this.scaleX, this.scaleY);
+        
         // Body
         ctx.fillStyle = emotion.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+        ctx.fillRect(-this.width/2, -this.height, this.width, this.height);
 
         // Simple face direction indicator
         ctx.fillStyle = '#fff';
-        const eyeX = this.facingRight ? this.x + 16 : this.x + 4;
-        ctx.fillRect(eyeX, this.y + 8, 4, 4);
+        const eyeX = this.facingRight ? 4 : -8;
+        ctx.fillRect(eyeX, -this.height + 8, 4, 4);
 
         // Glow effect
         ctx.shadowColor = emotion.color;
         ctx.shadowBlur = 10;
         ctx.fillStyle = 'rgba(255,255,255,0.1)';
-        ctx.fillRect(this.x, this.y, this.width, this.height);
-        ctx.shadowBlur = 0;
+        ctx.fillRect(-this.width/2, -this.height, this.width, this.height);
+        ctx.restore();
     }
 }
 
@@ -557,6 +592,7 @@ class Fragment {
 
             if (dist < this.radius + 20) {
                 this.collect();
+                game.shake = 5;
             }
         }
     }
@@ -827,6 +863,24 @@ function draw() {
     ctx.fillStyle = '#0a0a0f';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
+    // Screen Shake
+    ctx.save();
+    if (game.shake > 0) {
+        const dx = (Math.random() - 0.5) * game.shake;
+        const dy = (Math.random() - 0.5) * game.shake;
+        ctx.translate(dx, dy);
+        game.shake *= 0.9;
+        if (game.shake < 0.5) game.shake = 0;
+    }
+
+    // Draw Stars
+    stars.forEach(star => {
+        ctx.fillStyle = `rgba(255, 255, 255, ${star.alpha})`;
+        ctx.fillRect(star.x, star.y, star.size, star.size);
+        star.y = (star.y + star.speed) % canvas.height;
+        star.alpha = 0.5 + Math.sin(Date.now() * 0.005 + star.x) * 0.5;
+    });
+
     // Draw tiles
     const tileSize = CONFIG.TILE_SIZE;
     for (let y = 0; y < game.level.tiles.length; y++) {
@@ -884,6 +938,8 @@ function draw() {
         ctx.fillStyle = 'rgba(74, 158, 255, 0.05)';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
     }
+
+    ctx.restore(); // End screen shake
 }
 
 // -----------------------------------------------------------------------------
