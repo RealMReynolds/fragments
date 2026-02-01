@@ -182,7 +182,7 @@
         <div id="rewindIndicator">◀◀ REWINDING ◀◀</div>
 
         <div id="controls">
-            ARROWS to move · SPACE to jump (x2) · HOLD SHIFT to rewind (makes you lighter!)
+            ARROWS to move · SPACE to jump (x2) · HOLD SHIFT to rewind
         </div>
 
         <div id="rewindOverlay"></div>
@@ -239,7 +239,7 @@ const EMOTIONS = {
         name: 'HURT',
         emoji: '😢',
         color: '#6688aa',
-        jumpMod: 0.9, // Buffed from 0.8 to make jumps possible
+        jumpMod: 1.0, // Normalized to prevent inconsistency
         speedMod: 0.7,
         description: 'Heavy. Slower.'
     },
@@ -247,7 +247,7 @@ const EMOTIONS = {
         name: 'NUMB',
         emoji: '😶',
         color: '#888888',
-        jumpMod: 0.6,
+        jumpMod: 0.9, // Buffed from 0.6 to keep platforming viable
         speedMod: 0.5,
         canPhase: true, // Can pass through certain platforms
         description: 'Detached. Can phase through memories.'
@@ -406,17 +406,13 @@ class Player {
         if (keys.jump && !this.jumpHeld) {
             let jumped = false;
             
-            // Time Weight Mechanic: Less history = Higher jump
-            const historyRatio = game.timeHistory.length / CONFIG.MAX_TIME_HISTORY;
-            const lightnessBonus = 1 + (1 - historyRatio) * 0.15; // Up to 15% boost
-
             if (this.coyoteTime > 0) {
-                this.vy = CONFIG.JUMP_FORCE * emotion.jumpMod * lightnessBonus;
+                this.vy = CONFIG.JUMP_FORCE * emotion.jumpMod;
                 this.coyoteTime = 0;
                 this.jumpCount = 1;
                 jumped = true;
             } else if (this.jumpCount < this.maxJumps) {
-                this.vy = CONFIG.JUMP_FORCE * emotion.jumpMod * 0.9 * lightnessBonus;
+                this.vy = CONFIG.JUMP_FORCE * emotion.jumpMod * 0.9;
                 this.jumpCount++;
                 jumped = true;
             }
