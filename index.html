@@ -624,44 +624,40 @@ class Player {
         // Pivot point for scaling (bottom center)
         ctx.translate(this.x + this.width/2, this.y + this.height);
         ctx.scale(this.scaleX, this.scaleY);
-        
+
         // CHECK: Do we have a sprite loaded?
         if (SPRITES.player.complete && SPRITES.player.naturalWidth !== 0) {
             const img = SPRITES.player;
-            
-            // Heuristic: Is this a sprite sheet or a single image?
-            // Assume sprite sheet ONLY if it looks like a strip (Width >= 2x Height)
-            // OR if it matches our specific 32x32 grid template (128 width)
-            const isStrip = (img.width >= img.height * 2);
-            const isGrid = (img.width === 128 && img.height <= 96);
-            
-            let srcX = 0, srcY = 0, srcW = img.width, srcH = img.height;
-            
-            if (isStrip || isGrid) {
-                const frameSize = 32;
-                let row = 0;
-                if (img.height >= 96) {
-                    if (this.action === 'run') row = 1;
-                    if (this.action === 'jump') row = 2;
-                }
-                
-                // Cycle frames safely
-                const numFrames = Math.floor(img.width / frameSize) || 1;
-                const col = this.frame % numFrames;
-                
-                srcX = col * frameSize;
-                srcY = row * frameSize;
-                srcW = frameSize;
-                srcH = frameSize;
-            }
-            
+
+            // Sprite sheet layout: 4 columns x 3 rows
+            // Row 0 = Idle, Row 1 = Run, Row 2 = Jump
+            const COLS = 4;
+            const ROWS = 3;
+            const frameW = img.width / COLS;
+            const frameH = img.height / ROWS;
+
+            // Select row based on action
+            let row = 0; // idle
+            if (this.action === 'run') row = 1;
+            if (this.action === 'jump') row = 2;
+
+            // Select column based on animation frame
+            const col = this.frame % COLS;
+
+            // Source rectangle from sprite sheet
+            const srcX = col * frameW;
+            const srcY = row * frameH;
+
             // Flip sprite if facing left
             ctx.save();
             ctx.scale(this.facingRight ? 1 : -1, 1);
+
+            // Draw scaled down to 48x48 (slightly larger for visibility)
+            const drawSize = 48;
             ctx.drawImage(
                 img,
-                srcX, srcY, srcW, srcH, // Source
-                -16, -32, 32, 32        // Destination (centered on feet)
+                srcX, srcY, frameW, frameH,    // Source rectangle
+                -drawSize/2, -drawSize, drawSize, drawSize  // Destination (centered on feet)
             );
             ctx.restore();
         } else {
