@@ -660,8 +660,8 @@ class Player {
             ctx.save();
             ctx.scale(this.facingRight ? 1 : -1, 1);
 
-            // Draw scaled down to 48x48 (slightly larger for visibility)
-            const drawSize = 48;
+            // Draw at 64x64 for better visibility
+            const drawSize = 64;
             ctx.drawImage(
                 img,
                 srcX, srcY, frameW, frameH,    // Source rectangle
