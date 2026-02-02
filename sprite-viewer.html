@@ -3,752 +3,468 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sprite Sheet Viewer</title>
+    <title>Sprite Viewer</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        html, body { height: 100%; overflow: hidden; }
         body {
             background: #1a1a2e;
             color: #e0e0e0;
-            font-family: 'Segoe UI', system-ui, sans-serif;
-            min-height: 100vh;
-            padding: 20px;
+            font-family: system-ui, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            padding: 15px;
+            gap: 15px;
         }
 
-        .app {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
+        /* Header */
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid #333;
+            flex-shrink: 0;
         }
-
-        header h1 {
-            font-size: 20px;
-            color: #f1c40f;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
+        header h1 { font-size: 16px; color: #f1c40f; text-transform: uppercase; letter-spacing: 2px; }
         .file-btn {
-            padding: 10px 20px;
-            background: linear-gradient(135deg, #f1c40f 0%, #f39c12 100%);
+            padding: 8px 16px;
+            background: #f1c40f;
             border: none;
             border-radius: 4px;
             color: #000;
             font-weight: bold;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 12px;
+        }
+        #fileInput { display: none; }
+
+        /* Main Area */
+        .main {
+            display: flex;
+            gap: 15px;
+            flex: 1;
+            min-height: 0;
         }
 
-        .file-btn:hover {
-            filter: brightness(1.1);
+        /* Preview */
+        .preview-col {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            min-width: 0;
         }
-
-        #fileInput {
-            display: none;
-        }
-
-        /* Main Grid */
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 320px;
-            gap: 20px;
-        }
-
-        /* Preview Section */
-        .preview-section {
-            background: #0f0f1a;
-            border-radius: 8px;
-            padding: 20px;
-            border: 1px solid #333;
-        }
-
         .preview-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            flex-shrink: 0;
         }
-
-        .preview-header .action-name {
-            font-size: 18px;
-            color: #f1c40f;
-            font-weight: bold;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-        }
-
-        .preview-header .frame-info {
-            font-family: monospace;
-            color: #888;
-        }
-
-        .zoom-controls {
+        .preview-header .info { font-size: 14px; }
+        .preview-header .action { color: #f1c40f; font-weight: bold; }
+        .preview-header .frame { color: #888; font-family: monospace; margin-left: 10px; }
+        .zoom-ctrl {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
             background: #16213e;
-            padding: 5px 10px;
+            padding: 4px 8px;
             border-radius: 4px;
         }
-
-        .zoom-controls span {
-            font-family: monospace;
-            font-size: 12px;
-            min-width: 40px;
-            text-align: center;
-        }
-
+        .zoom-ctrl span { font-family: monospace; font-size: 12px; width: 30px; text-align: center; }
         .zoom-btn {
-            width: 28px;
-            height: 28px;
+            width: 24px; height: 24px;
             background: #0f0f1a;
             border: 1px solid #333;
-            border-radius: 4px;
+            border-radius: 3px;
             color: #fff;
             cursor: pointer;
-            font-size: 16px;
         }
+        .zoom-btn:hover { border-color: #f1c40f; }
 
-        .zoom-btn:hover {
-            border-color: #f1c40f;
-        }
-
-        .canvas-container {
-            background:
-                linear-gradient(45deg, #222 25%, transparent 25%),
-                linear-gradient(-45deg, #222 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, #222 75%),
-                linear-gradient(-45deg, transparent 75%, #222 75%);
-            background-size: 20px 20px;
-            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
-            background-color: #1a1a1a;
-            border-radius: 8px;
+        .canvas-wrap {
+            flex: 1;
+            background: repeating-conic-gradient(#222 0% 25%, #2a2a2a 0% 50%) 50% / 20px 20px;
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 300px;
             overflow: hidden;
+            min-height: 0;
         }
-
-        #preview {
-            image-rendering: pixelated;
-            image-rendering: crisp-edges;
-        }
+        #preview { image-rendering: pixelated; max-width: 100%; max-height: 100%; }
 
         /* Frame Strip */
         .frame-strip {
             display: flex;
-            gap: 8px;
-            margin-top: 15px;
-            padding: 10px;
+            gap: 6px;
+            padding: 8px;
             background: #16213e;
             border-radius: 4px;
+            flex-shrink: 0;
             overflow-x: auto;
         }
-
         .frame-thumb {
             flex-shrink: 0;
-            width: 60px;
-            height: 60px;
+            width: 50px; height: 50px;
             background: #0f0f1a;
             border: 2px solid #333;
-            border-radius: 4px;
+            border-radius: 3px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            position: relative;
         }
+        .frame-thumb:hover { border-color: #555; }
+        .frame-thumb.active { border-color: #f1c40f; }
+        .frame-thumb canvas { image-rendering: pixelated; }
 
-        .frame-thumb:hover {
-            border-color: #555;
-        }
-
-        .frame-thumb.active {
-            border-color: #f1c40f;
-            box-shadow: 0 0 10px rgba(241, 196, 15, 0.3);
-        }
-
-        .frame-thumb canvas {
-            image-rendering: pixelated;
-        }
-
-        .frame-thumb .frame-num {
-            position: absolute;
-            bottom: 2px;
-            right: 4px;
-            font-size: 10px;
-            color: #666;
-            font-family: monospace;
-        }
-
-        /* Controls Panel */
-        .controls-panel {
+        /* Controls Column */
+        .ctrl-col {
+            width: 280px;
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 10px;
+            flex-shrink: 0;
         }
-
-        .control-card {
+        .card {
             background: #16213e;
-            border-radius: 8px;
-            padding: 15px;
-            border: 1px solid #333;
+            border-radius: 6px;
+            padding: 12px;
         }
-
-        .control-card h3 {
-            font-size: 11px;
+        .card h3 {
+            font-size: 10px;
             color: #888;
             text-transform: uppercase;
             letter-spacing: 1px;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
         }
 
-        /* Row Buttons */
-        .row-buttons {
+        /* Grid inputs */
+        .grid-row {
             display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
+            gap: 10px;
+        }
+        .grid-row label {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            font-size: 10px;
+            color: #666;
+        }
+        .grid-row input {
+            padding: 6px;
+            background: #0f0f1a;
+            border: 1px solid #333;
+            border-radius: 3px;
+            color: #fff;
+            font-family: monospace;
+            text-align: center;
+        }
+        .grid-row input:focus { outline: none; border-color: #f1c40f; }
+
+        /* Sheet thumb */
+        .sheet-wrap {
+            margin-top: 8px;
+            position: relative;
+            line-height: 0;
+        }
+        #sheetThumb { max-width: 100%; image-rendering: pixelated; border-radius: 3px; opacity: 0.8; }
+        .highlight {
+            position: absolute;
+            border: 2px solid #f1c40f;
+            box-shadow: 0 0 8px rgba(241,196,15,0.5);
+            pointer-events: none;
         }
 
+        /* Row buttons */
+        .row-btns { display: flex; gap: 6px; flex-wrap: wrap; }
         .row-btn {
             flex: 1;
-            min-width: 70px;
-            padding: 8px 12px;
+            min-width: 60px;
+            padding: 6px 10px;
             background: #0f0f1a;
             border: 1px solid #333;
-            border-radius: 4px;
+            border-radius: 3px;
             color: #fff;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
             text-transform: uppercase;
         }
+        .row-btn:hover { border-color: #555; }
+        .row-btn.active { background: #f1c40f; color: #000; border-color: #f1c40f; }
 
-        .row-btn:hover {
-            border-color: #555;
-        }
-
-        .row-btn.active {
-            background: #f1c40f;
-            color: #000;
-            border-color: #f1c40f;
-        }
-
-        /* Playback Controls */
-        .playback-row {
-            display: flex;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
+        /* Playback */
+        .play-row { display: flex; gap: 6px; }
         .play-btn {
             flex: 1;
-            padding: 12px;
+            padding: 10px;
             background: #0f0f1a;
             border: 1px solid #333;
-            border-radius: 4px;
+            border-radius: 3px;
             color: #fff;
             cursor: pointer;
-            font-size: 16px;
+            font-size: 14px;
         }
+        .play-btn:hover { border-color: #f1c40f; }
+        .play-btn.playing { background: #27ae60; border-color: #27ae60; }
 
-        .play-btn:hover {
-            border-color: #f1c40f;
-        }
-
-        .play-btn.playing {
-            background: #27ae60;
-            border-color: #27ae60;
-        }
-
-        /* Sliders */
-        .slider-group {
-            margin-top: 10px;
-        }
-
-        .slider-label {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            margin-bottom: 6px;
-        }
-
-        .slider-label .value {
-            color: #f1c40f;
-            font-family: monospace;
-        }
-
+        .slider-row { margin-top: 8px; }
+        .slider-label { display: flex; justify-content: space-between; font-size: 11px; margin-bottom: 4px; }
+        .slider-label .val { color: #f1c40f; font-family: monospace; }
         input[type="range"] {
             -webkit-appearance: none;
-            width: 100%;
-            height: 6px;
+            width: 100%; height: 4px;
             background: #0f0f1a;
-            border-radius: 3px;
-            outline: none;
+            border-radius: 2px;
         }
-
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
+            width: 14px; height: 14px;
             background: #f1c40f;
             border-radius: 50%;
             cursor: pointer;
         }
 
-        /* Grid Settings */
-        .grid-inputs {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .grid-input {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-
-        .grid-input label {
-            font-size: 11px;
+        /* Export */
+        .export-box {
+            background: #0f0f1a;
+            padding: 8px;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 10px;
             color: #888;
         }
-
-        .grid-input input {
+        .export-box .k { color: #f1c40f; }
+        .export-box .v { color: #2ecc71; }
+        .copy-btn {
+            width: 100%;
+            margin-top: 8px;
             padding: 8px;
             background: #0f0f1a;
             border: 1px solid #333;
-            border-radius: 4px;
-            color: #fff;
-            font-family: monospace;
-            font-size: 14px;
-            width: 100%;
-            text-align: center;
-        }
-
-        .grid-input input:focus {
-            outline: none;
-            border-color: #f1c40f;
-        }
-
-        /* Sheet Overview */
-        .sheet-thumb-container {
-            margin-top: 10px;
-            position: relative;
-            display: inline-block;
-        }
-
-        #sheetThumb {
-            max-width: 100%;
-            height: auto;
-            image-rendering: pixelated;
-            border-radius: 4px;
-            opacity: 0.8;
-        }
-
-        .frame-highlight {
-            position: absolute;
-            border: 2px solid #f1c40f;
-            pointer-events: none;
-            box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
-        }
-
-        /* Export */
-        .export-code {
-            background: #0f0f1a;
-            padding: 10px;
-            border-radius: 4px;
-            font-family: monospace;
-            font-size: 11px;
-            color: #888;
-            white-space: pre;
-            overflow-x: auto;
-        }
-
-        .export-code .key { color: #f1c40f; }
-        .export-code .val { color: #2ecc71; }
-
-        .copy-btn {
-            width: 100%;
-            margin-top: 10px;
-            padding: 10px;
-            background: #0f0f1a;
-            border: 1px solid #333;
-            border-radius: 4px;
+            border-radius: 3px;
             color: #fff;
             cursor: pointer;
-            font-size: 12px;
+            font-size: 11px;
         }
-
-        .copy-btn:hover {
-            border-color: #f1c40f;
-        }
-
-        /* Responsive */
-        @media (max-width: 900px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-        }
+        .copy-btn:hover { border-color: #f1c40f; }
     </style>
 </head>
 <body>
-    <div class="app">
-        <header>
-            <h1>Sprite Viewer</h1>
-            <label class="file-btn">
-                Load Sprite Sheet
-                <input type="file" id="fileInput" accept="image/*">
-            </label>
-        </header>
+    <header>
+        <h1>Sprite Viewer</h1>
+        <label class="file-btn">Load Sheet<input type="file" id="fileInput" accept="image/*"></label>
+    </header>
 
-        <div class="main-grid">
-            <!-- Left: Preview -->
-            <div class="preview-section">
-                <div class="preview-header">
-                    <div>
-                        <span class="action-name" id="actionName">IDLE</span>
-                        <span class="frame-info">Frame <span id="frameNum">0</span>/<span id="totalFrames">4</span></span>
-                    </div>
-                    <div class="zoom-controls">
-                        <button class="zoom-btn" id="zoomOut">-</button>
-                        <span id="zoomLevel">4x</span>
-                        <button class="zoom-btn" id="zoomIn">+</button>
-                    </div>
+    <div class="main">
+        <div class="preview-col">
+            <div class="preview-header">
+                <div class="info">
+                    <span class="action" id="actionName">IDLE</span>
+                    <span class="frame">Frame <span id="frameNum">0</span>/<span id="totalFrames">4</span></span>
                 </div>
-                <div class="canvas-container">
-                    <canvas id="preview"></canvas>
+                <div class="zoom-ctrl">
+                    <button class="zoom-btn" id="zoomOut">-</button>
+                    <span id="zoomLevel">4x</span>
+                    <button class="zoom-btn" id="zoomIn">+</button>
                 </div>
-                <div class="frame-strip" id="frameStrip"></div>
+            </div>
+            <div class="canvas-wrap">
+                <canvas id="preview"></canvas>
+            </div>
+            <div class="frame-strip" id="frameStrip"></div>
+        </div>
+
+        <div class="ctrl-col">
+            <div class="card">
+                <h3>Grid</h3>
+                <div class="grid-row">
+                    <label>Cols<input type="number" id="cols" value="4" min="1" max="16"></label>
+                    <label>Rows<input type="number" id="rows" value="3" min="1" max="16"></label>
+                </div>
+                <div class="sheet-wrap" id="sheetWrap" style="display:none">
+                    <img id="sheetThumb" src="">
+                    <div class="highlight" id="highlight"></div>
+                </div>
             </div>
 
-            <!-- Right: Controls -->
-            <div class="controls-panel">
-                <!-- Grid Config -->
-                <div class="control-card">
-                    <h3>Grid Layout</h3>
-                    <div class="grid-inputs">
-                        <div class="grid-input">
-                            <label>Columns</label>
-                            <input type="number" id="cols" value="4" min="1" max="16">
-                        </div>
-                        <div class="grid-input">
-                            <label>Rows</label>
-                            <input type="number" id="rows" value="3" min="1" max="16">
-                        </div>
-                    </div>
-                    <div class="sheet-thumb-container" id="sheetOverview" style="display:none;">
-                        <img id="sheetThumb" src="">
-                        <div class="frame-highlight" id="frameHighlight"></div>
-                    </div>
+            <div class="card">
+                <h3>Row</h3>
+                <div class="row-btns" id="rowBtns">
+                    <button class="row-btn active" data-row="0">Idle</button>
+                    <button class="row-btn" data-row="1">Run</button>
+                    <button class="row-btn" data-row="2">Jump</button>
                 </div>
+            </div>
 
-                <!-- Animation Row -->
-                <div class="control-card">
-                    <h3>Animation Row</h3>
-                    <div class="row-buttons" id="rowButtons">
-                        <button class="row-btn active" data-row="0">Idle</button>
-                        <button class="row-btn" data-row="1">Run</button>
-                        <button class="row-btn" data-row="2">Jump</button>
-                    </div>
+            <div class="card">
+                <h3>Playback</h3>
+                <div class="play-row">
+                    <button class="play-btn" id="prev">⏮</button>
+                    <button class="play-btn" id="play">▶</button>
+                    <button class="play-btn" id="next">⏭</button>
                 </div>
+                <div class="slider-row">
+                    <div class="slider-label"><span>Speed</span><span class="val" id="speedVal">150ms</span></div>
+                    <input type="range" id="speed" min="50" max="500" value="150" step="10">
+                </div>
+            </div>
 
-                <!-- Playback -->
-                <div class="control-card">
-                    <h3>Playback</h3>
-                    <div class="playback-row">
-                        <button class="play-btn" id="prevFrame">⏮</button>
-                        <button class="play-btn" id="playPause">▶</button>
-                        <button class="play-btn" id="nextFrame">⏭</button>
-                    </div>
-                    <div class="slider-group">
-                        <div class="slider-label">
-                            <span>Speed</span>
-                            <span class="value" id="speedValue">150ms</span>
-                        </div>
-                        <input type="range" id="speed" min="50" max="500" value="150" step="10">
-                    </div>
-                </div>
-
-                <!-- Export -->
-                <div class="control-card">
-                    <h3>Export Config</h3>
-                    <div class="export-code" id="exportCode">Load a sprite sheet...</div>
-                    <button class="copy-btn" id="copyBtn">Copy Config</button>
-                </div>
+            <div class="card">
+                <h3>Export</h3>
+                <div class="export-box" id="exportBox">Load sprite sheet...</div>
+                <button class="copy-btn" id="copyBtn">Copy Config</button>
             </div>
         </div>
     </div>
 
-    <script>
-const preview = document.getElementById('preview');
-const ctx = preview.getContext('2d');
+<script>
+const canvas = document.getElementById('preview');
+const ctx = canvas.getContext('2d');
 ctx.imageSmoothingEnabled = false;
 
-let spriteSheet = null;
-let currentRow = 0;
-let currentFrame = 0;
-let isPlaying = false;
-let playInterval = null;
-let cols = 4;
-let rows = 3;
-let speed = 150;
-let scale = 4;
+let img = null, row = 0, frame = 0, playing = false, interval = null;
+let cols = 4, rows = 3, speed = 150, scale = 4;
 
-// File Loading
-document.getElementById('fileInput').addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-        spriteSheet = new Image();
-        spriteSheet.onload = () => {
-            document.getElementById('sheetOverview').style.display = 'block';
-            document.getElementById('sheetThumb').src = spriteSheet.src;
-            updateAll();
-        };
-        spriteSheet.src = ev.target.result;
-    };
-    reader.readAsDataURL(file);
-});
+// Load file
+document.getElementById('fileInput').onchange = e => {
+    const f = e.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = ev => { loadImage(ev.target.result); };
+    r.readAsDataURL(f);
+};
 
 // Load default
-const defaultSheet = new Image();
-defaultSheet.onload = () => {
-    spriteSheet = defaultSheet;
-    document.getElementById('sheetOverview').style.display = 'block';
-    document.getElementById('sheetThumb').src = spriteSheet.src;
-    updateAll();
+loadImage('player.png');
+
+function loadImage(src) {
+    const i = new Image();
+    i.onload = () => { img = i; document.getElementById('sheetWrap').style.display='block'; document.getElementById('sheetThumb').src=img.src; update(); };
+    i.src = src;
+}
+
+// Controls
+document.getElementById('cols').onchange = e => { cols = Math.max(1,+e.target.value||1); frame = Math.min(frame,cols-1); update(); };
+document.getElementById('rows').onchange = e => { rows = Math.max(1,+e.target.value||1); row = Math.min(row,rows-1); updateRowBtns(); update(); };
+document.getElementById('rowBtns').onclick = e => { if (!e.target.dataset.row) return; row = +e.target.dataset.row; frame = 0; update(); };
+document.getElementById('zoomIn').onclick = () => { if (scale<12) { scale++; update(); } };
+document.getElementById('zoomOut').onclick = () => { if (scale>1) { scale--; update(); } };
+document.getElementById('prev').onclick = () => { stop(); frame = (frame-1+cols)%cols; update(); };
+document.getElementById('next').onclick = () => { stop(); frame = (frame+1)%cols; update(); };
+document.getElementById('play').onclick = () => playing ? stop() : start();
+document.getElementById('speed').oninput = e => { speed = +e.target.value; document.getElementById('speedVal').textContent = speed+'ms'; if (playing) { stop(); start(); } };
+document.getElementById('copyBtn').onclick = () => {
+    if (!img) return;
+    const fw = Math.round(img.width/cols), fh = Math.round(img.height/rows);
+    navigator.clipboard.writeText(`const COLS=${cols}, ROWS=${rows}, FRAME_W=${fw}, FRAME_H=${fh}, SPEED=${speed};`);
+    document.getElementById('copyBtn').textContent = 'Copied!';
+    setTimeout(() => document.getElementById('copyBtn').textContent = 'Copy Config', 1500);
 };
-defaultSheet.src = 'player.png';
 
-// Grid Controls
-document.getElementById('cols').addEventListener('change', (e) => {
-    cols = Math.max(1, parseInt(e.target.value) || 1);
-    e.target.value = cols;
-    currentFrame = Math.min(currentFrame, cols - 1);
-    updateAll();
-});
+// Keyboard
+document.onkeydown = e => {
+    if (e.target.tagName === 'INPUT') return;
+    if (e.code === 'Space') { e.preventDefault(); playing ? stop() : start(); }
+    else if (e.code === 'ArrowLeft') { stop(); frame = (frame-1+cols)%cols; update(); }
+    else if (e.code === 'ArrowRight') { stop(); frame = (frame+1)%cols; update(); }
+    else if (e.code === 'ArrowUp' && row > 0) { row--; frame = 0; update(); }
+    else if (e.code === 'ArrowDown' && row < rows-1) { row++; frame = 0; update(); }
+};
 
-document.getElementById('rows').addEventListener('change', (e) => {
-    rows = Math.max(1, parseInt(e.target.value) || 1);
-    e.target.value = rows;
-    currentRow = Math.min(currentRow, rows - 1);
-    updateRowButtons();
-    updateAll();
-});
+function start() {
+    playing = true;
+    document.getElementById('play').textContent = '⏸';
+    document.getElementById('play').classList.add('playing');
+    interval = setInterval(() => { frame = (frame+1)%cols; update(); }, speed);
+}
+function stop() {
+    playing = false;
+    document.getElementById('play').textContent = '▶';
+    document.getElementById('play').classList.remove('playing');
+    if (interval) { clearInterval(interval); interval = null; }
+}
 
-// Row Buttons
-document.getElementById('rowButtons').addEventListener('click', (e) => {
-    if (!e.target.classList.contains('row-btn')) return;
-    document.querySelectorAll('.row-btn').forEach(b => b.classList.remove('active'));
-    e.target.classList.add('active');
-    currentRow = parseInt(e.target.dataset.row);
-    currentFrame = 0;
-    updateAll();
-});
-
-function updateRowButtons() {
-    const labels = ['Idle', 'Run', 'Jump', 'Row 4', 'Row 5', 'Row 6', 'Row 7', 'Row 8'];
-    const container = document.getElementById('rowButtons');
-    container.innerHTML = '';
+function updateRowBtns() {
+    const labels = ['Idle','Run','Jump','Row4','Row5','Row6','Row7','Row8'];
+    const c = document.getElementById('rowBtns');
+    c.innerHTML = '';
     for (let i = 0; i < rows; i++) {
-        const btn = document.createElement('button');
-        btn.className = 'row-btn' + (i === currentRow ? ' active' : '');
-        btn.dataset.row = i;
-        btn.textContent = labels[i] || `Row ${i+1}`;
-        container.appendChild(btn);
+        const b = document.createElement('button');
+        b.className = 'row-btn' + (i === row ? ' active' : '');
+        b.dataset.row = i;
+        b.textContent = labels[i] || 'Row'+(i+1);
+        c.appendChild(b);
     }
 }
 
-// Playback
-document.getElementById('playPause').addEventListener('click', togglePlay);
-document.getElementById('prevFrame').addEventListener('click', () => { stopPlay(); currentFrame = (currentFrame - 1 + cols) % cols; updateAll(); });
-document.getElementById('nextFrame').addEventListener('click', () => { stopPlay(); currentFrame = (currentFrame + 1) % cols; updateAll(); });
-
-document.getElementById('speed').addEventListener('input', (e) => {
-    speed = parseInt(e.target.value);
-    document.getElementById('speedValue').textContent = speed + 'ms';
-    if (isPlaying) { stopPlay(); startPlay(); }
-});
-
-function togglePlay() {
-    if (isPlaying) stopPlay();
-    else startPlay();
-}
-
-function startPlay() {
-    isPlaying = true;
-    document.getElementById('playPause').textContent = '⏸';
-    document.getElementById('playPause').classList.add('playing');
-    playInterval = setInterval(() => {
-        currentFrame = (currentFrame + 1) % cols;
-        updateAll();
-    }, speed);
-}
-
-function stopPlay() {
-    isPlaying = false;
-    document.getElementById('playPause').textContent = '▶';
-    document.getElementById('playPause').classList.remove('playing');
-    if (playInterval) { clearInterval(playInterval); playInterval = null; }
-}
-
-// Zoom
-document.getElementById('zoomIn').addEventListener('click', () => { if (scale < 12) { scale++; updateAll(); } });
-document.getElementById('zoomOut').addEventListener('click', () => { if (scale > 1) { scale--; updateAll(); } });
-
-// Copy
-document.getElementById('copyBtn').addEventListener('click', () => {
-    if (!spriteSheet) return;
-    const frameW = Math.round(spriteSheet.width / cols);
-    const frameH = Math.round(spriteSheet.height / rows);
-    const config = `const SPRITE_COLS = ${cols};\nconst SPRITE_ROWS = ${rows};\nconst FRAME_W = ${frameW};\nconst FRAME_H = ${frameH};\nconst ANIM_SPEED = ${speed};`;
-    navigator.clipboard.writeText(config).then(() => {
-        document.getElementById('copyBtn').textContent = 'Copied!';
-        setTimeout(() => { document.getElementById('copyBtn').textContent = 'Copy Config'; }, 1500);
-    });
-});
-
-// Keyboard
-document.addEventListener('keydown', (e) => {
-    if (e.target.tagName === 'INPUT') return;
-    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
-    else if (e.code === 'ArrowLeft') { stopPlay(); currentFrame = (currentFrame - 1 + cols) % cols; updateAll(); }
-    else if (e.code === 'ArrowRight') { stopPlay(); currentFrame = (currentFrame + 1) % cols; updateAll(); }
-    else if (e.code === 'ArrowUp' && currentRow > 0) { currentRow--; currentFrame = 0; updateAll(); }
-    else if (e.code === 'ArrowDown' && currentRow < rows - 1) { currentRow++; currentFrame = 0; updateAll(); }
-});
-
-// Update Everything
-function updateAll() {
+function update() {
     render();
-    updateFrameStrip();
+    updateStrip();
     updateUI();
-    updateExport();
     updateHighlight();
+    updateExport();
 }
 
 function render() {
-    if (!spriteSheet) {
-        preview.width = 256;
-        preview.height = 256;
-        ctx.fillStyle = '#333';
-        ctx.fillRect(0, 0, 256, 256);
-        ctx.fillStyle = '#666';
-        ctx.font = '14px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.fillText('Load a sprite sheet', 128, 128);
-        return;
-    }
-
-    const frameW = spriteSheet.width / cols;
-    const frameH = spriteSheet.height / rows;
-    const displayW = frameW * scale;
-    const displayH = frameH * scale;
-
-    preview.width = displayW;
-    preview.height = displayH;
+    if (!img) { canvas.width=200; canvas.height=200; ctx.fillStyle='#333'; ctx.fillRect(0,0,200,200); return; }
+    const fw = img.width/cols, fh = img.height/rows;
+    const dw = fw*scale, dh = fh*scale;
+    canvas.width = dw; canvas.height = dh;
     ctx.imageSmoothingEnabled = false;
-
-    ctx.drawImage(
-        spriteSheet,
-        currentFrame * frameW, currentRow * frameH, frameW, frameH,
-        0, 0, displayW, displayH
-    );
+    ctx.drawImage(img, frame*fw, row*fh, fw, fh, 0, 0, dw, dh);
 }
 
-function updateFrameStrip() {
-    const container = document.getElementById('frameStrip');
-    container.innerHTML = '';
-    if (!spriteSheet) return;
-
-    const frameW = spriteSheet.width / cols;
-    const frameH = spriteSheet.height / rows;
-
+function updateStrip() {
+    const c = document.getElementById('frameStrip');
+    c.innerHTML = '';
+    if (!img) return;
+    const fw = img.width/cols, fh = img.height/rows;
     for (let i = 0; i < cols; i++) {
-        const thumb = document.createElement('div');
-        thumb.className = 'frame-thumb' + (i === currentFrame ? ' active' : '');
-
-        const canvas = document.createElement('canvas');
-        canvas.width = 50;
-        canvas.height = 50;
-        const tctx = canvas.getContext('2d');
-        tctx.imageSmoothingEnabled = false;
-
-        const fitScale = Math.min(50 / frameW, 50 / frameH);
-        const drawW = frameW * fitScale;
-        const drawH = frameH * fitScale;
-        tctx.drawImage(spriteSheet, i * frameW, currentRow * frameH, frameW, frameH, (50-drawW)/2, (50-drawH)/2, drawW, drawH);
-
-        thumb.appendChild(canvas);
-
-        const num = document.createElement('span');
-        num.className = 'frame-num';
-        num.textContent = i;
-        thumb.appendChild(num);
-
-        thumb.addEventListener('click', () => { stopPlay(); currentFrame = i; updateAll(); });
-        container.appendChild(thumb);
+        const d = document.createElement('div');
+        d.className = 'frame-thumb' + (i === frame ? ' active' : '');
+        const cv = document.createElement('canvas');
+        cv.width = 40; cv.height = 40;
+        const tc = cv.getContext('2d');
+        tc.imageSmoothingEnabled = false;
+        const s = Math.min(40/fw, 40/fh);
+        tc.drawImage(img, i*fw, row*fh, fw, fh, (40-fw*s)/2, (40-fh*s)/2, fw*s, fh*s);
+        d.appendChild(cv);
+        d.onclick = () => { stop(); frame = i; update(); };
+        c.appendChild(d);
     }
 }
 
 function updateUI() {
-    const labels = ['IDLE', 'RUN', 'JUMP', 'ROW 4', 'ROW 5', 'ROW 6'];
-    document.getElementById('actionName').textContent = labels[currentRow] || `ROW ${currentRow+1}`;
-    document.getElementById('frameNum').textContent = currentFrame;
+    const labels = ['IDLE','RUN','JUMP','ROW4','ROW5','ROW6'];
+    document.getElementById('actionName').textContent = labels[row] || 'ROW'+(row+1);
+    document.getElementById('frameNum').textContent = frame;
     document.getElementById('totalFrames').textContent = cols;
-    document.getElementById('zoomLevel').textContent = scale + 'x';
-
-    document.querySelectorAll('.row-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', i === currentRow);
-    });
-}
-
-function updateExport() {
-    if (!spriteSheet) {
-        document.getElementById('exportCode').textContent = 'Load a sprite sheet...';
-        return;
-    }
-    const frameW = Math.round(spriteSheet.width / cols);
-    const frameH = Math.round(spriteSheet.height / rows);
-    document.getElementById('exportCode').innerHTML =
-        `<span class="key">COLS:</span> <span class="val">${cols}</span>  <span class="key">ROWS:</span> <span class="val">${rows}</span>\n` +
-        `<span class="key">FRAME:</span> <span class="val">${frameW}x${frameH}px</span>\n` +
-        `<span class="key">SPEED:</span> <span class="val">${speed}ms</span>`;
+    document.getElementById('zoomLevel').textContent = scale+'x';
+    document.querySelectorAll('.row-btn').forEach((b,i) => b.classList.toggle('active', i===row));
 }
 
 function updateHighlight() {
-    if (!spriteSheet) return;
-    const thumb = document.getElementById('sheetThumb');
-    const highlight = document.getElementById('frameHighlight');
-    if (!thumb.complete || thumb.naturalWidth === 0) return;
-
-    const frameW = spriteSheet.width / cols;
-    const frameH = spriteSheet.height / rows;
-    const scaleX = thumb.clientWidth / spriteSheet.width;
-    const scaleY = thumb.clientHeight / spriteSheet.height;
-
-    highlight.style.left = (currentFrame * frameW * scaleX) + 'px';
-    highlight.style.top = (currentRow * frameH * scaleY) + 'px';
-    highlight.style.width = (frameW * scaleX) + 'px';
-    highlight.style.height = (frameH * scaleY) + 'px';
+    if (!img) return;
+    const t = document.getElementById('sheetThumb');
+    const h = document.getElementById('highlight');
+    if (!t.complete) return;
+    const fw = img.width/cols, fh = img.height/rows;
+    const sx = t.clientWidth/img.width, sy = t.clientHeight/img.height;
+    h.style.left = (frame*fw*sx)+'px';
+    h.style.top = (row*fh*sy)+'px';
+    h.style.width = (fw*sx)+'px';
+    h.style.height = (fh*sy)+'px';
 }
 
-// Initial
-updateAll();
-    </script>
+function updateExport() {
+    if (!img) { document.getElementById('exportBox').textContent = 'Load sprite sheet...'; return; }
+    const fw = Math.round(img.width/cols), fh = Math.round(img.height/rows);
+    document.getElementById('exportBox').innerHTML = `<span class="k">COLS:</span> <span class="v">${cols}</span>  <span class="k">ROWS:</span> <span class="v">${rows}</span><br><span class="k">FRAME:</span> <span class="v">${fw}x${fh}</span>  <span class="k">SPEED:</span> <span class="v">${speed}ms</span>`;
+}
+
+update();
+</script>
 </body>
 </html>
