@@ -214,6 +214,19 @@ const brushes = Array.from({ length: 2000 }, () => ({
     width: Math.random() * 2 + 1
 }));
 
+// Sprite System
+const SPRITES = {
+    player: new Image(),
+    tiles: new Image()
+};
+
+SPRITES.player.onload = () => console.log('Player sprite loaded:', SPRITES.player.width, 'x', SPRITES.player.height);
+SPRITES.tiles.onload = () => console.log('Tiles sprite loaded:', SPRITES.tiles.width, 'x', SPRITES.tiles.height);
+
+// UNCOMMENT THESE LINES WHEN YOU HAVE IMAGES:
+SPRITES.player.src = 'player.png';  // Expects 32x32 frames: Row 0=Idle, 1=Run, 2=Jump
+SPRITES.tiles.src = 'tiles.png';    // Expects 32x32 tiles
+
 // -----------------------------------------------------------------------------
 // CONFIGURATION
 // -----------------------------------------------------------------------------
@@ -368,6 +381,9 @@ class Player {
         this.coyoteTime = 0;
         this.jumpCount = 0;
         this.maxJumps = 2;
+        this.animTimer = 0;
+        this.frame = 0;
+        this.action = 'idle';
     }
 
     update() {
@@ -381,6 +397,18 @@ class Player {
             this.jumpCount = 0;
         } else {
             this.coyoteTime--;
+        }
+
+        // Animation State Logic
+        if (!this.onGround) this.action = 'jump';
+        else if (Math.abs(this.vx) > 0.5) this.action = 'run';
+        else this.action = 'idle';
+
+        // Animation Frame Ticking
+        this.animTimer++;
+        if (this.animTimer > 6) { // ~10 FPS
+            this.frame = (this.frame + 1) % 4; // Assuming 4 frames per row
+            this.animTimer = 0;
         }
 
         // Squash and stretch recovery
@@ -581,22 +609,52 @@ class Player {
         ctx.translate(this.x + this.width/2, this.y + this.height);
         ctx.scale(this.scaleX, this.scaleY);
         
-        // Body (Spirit Flame Shape)
-        ctx.beginPath();
-        ctx.moveTo(-this.width/2, -this.height);
-        ctx.quadraticCurveTo(0, -this.height - 10 + Math.sin(Date.now() * 0.01) * 5, this.width/2, -this.height);
-        ctx.lineTo(this.width/2, 0);
-        ctx.lineTo(-this.width/2, 0);
-        ctx.closePath();
-        
-        ctx.fillStyle = emotion.color;
-        ctx.fill();
-        
-        // Inner light
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.beginPath();
-        ctx.arc(0, -this.height/2, 6, 0, Math.PI * 2);
-        ctx.fill();
+        // CHECK: Do we have a sprite loaded?
+        if (SPRITES.player.complete && SPRITES.player.naturalWidth !== 0) {
+            // Smart Sprite Drawing (Adapts to image size)
+            const img = SPRITES.player;
+            const frameSize = 32;
+            
+            // Determine row (Action) - Only if image has enough height
+            let row = 0;
+            if (img.height >= frameSize * 3) {
+                if (this.action === 'run') row = 1;
+                if (this.action === 'jump') row = 2;
+            }
+            
+            // Determine column (Frame) - Only if image has enough width
+            let col = 0;
+            if (img.width >= frameSize * 4) {
+                col = this.frame;
+            }
+            
+            // Flip sprite if facing left
+            ctx.save();
+            ctx.scale(this.facingRight ? 1 : -1, 1);
+            ctx.drawImage(
+                img,
+                col * frameSize, row * frameSize, frameSize, frameSize, // Source
+                -16, -32, 32, 32                   // Destination (centered on feet)
+            );
+            ctx.restore();
+        } else {
+            // FALLBACK: Procedural Spirit Flame
+            ctx.beginPath();
+            ctx.moveTo(-this.width/2, -this.height);
+            ctx.quadraticCurveTo(0, -this.height - 10 + Math.sin(Date.now() * 0.01) * 5, this.width/2, -this.height);
+            ctx.lineTo(this.width/2, 0);
+            ctx.lineTo(-this.width/2, 0);
+            ctx.closePath();
+            
+            ctx.fillStyle = emotion.color;
+            ctx.fill();
+            
+            // Inner light
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.arc(0, -this.height/2, 6, 0, Math.PI * 2);
+            ctx.fill();
+        }
 
         // Glow effect (Painterly halo)
         ctx.shadowColor = emotion.color;
@@ -966,33 +1024,47 @@ function draw() {
 
             if (tile === 1) {
                 // Solid tile - Stone Ruins
-                // Base
-                ctx.fillStyle = '#2c3e50';
-                ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-                
-                // Brick texture
-                ctx.fillStyle = '#34495e';
-                ctx.fillRect(x * tileSize + 2, y * tileSize + 2, tileSize - 4, tileSize - 4);
-                
-                // Cracks/Details
-                ctx.fillStyle = '#1a252f';
-                ctx.fillRect(x * tileSize + 4, y * tileSize + 14, tileSize - 8, 2);
-                ctx.fillRect(x * tileSize + 14, y * tileSize + 4, 2, tileSize - 8);
+                if (SPRITES.tiles.complete && SPRITES.tiles.naturalWidth !== 0) {
+                    // Draw Tile Sprite (Assume 1st tile in sheet is ground)
+                    ctx.drawImage(SPRITES.tiles, 0, 0, 32, 32, x * tileSize, y * tileSize, tileSize, tileSize);
+                } else {
+                    // Fallback Procedural
+                    // Base
+                    ctx.fillStyle = '#2c3e50';
+                    ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+                    
+                    // Brick texture
+                    ctx.fillStyle = '#34495e';
+                    ctx.fillRect(x * tileSize + 2, y * tileSize + 2, tileSize - 4, tileSize - 4);
+                    
+                    // Cracks/Details
+                    ctx.fillStyle = '#1a252f';
+                    ctx.fillRect(x * tileSize + 4, y * tileSize + 14, tileSize - 8, 2);
+                    ctx.fillRect(x * tileSize + 14, y * tileSize + 4, 2, tileSize - 8);
 
-                // Moss on top (if empty above)
-                if (getTile(x, y-1) !== 1) {
-                    ctx.fillStyle = '#27ae60'; // Moss green
-                    ctx.fillRect(x * tileSize, y * tileSize, tileSize, 6);
-                    // Moss drips
-                    if ((x + y) % 3 === 0) {
-                        ctx.fillRect(x * tileSize + 4, y * tileSize + 6, 4, 6);
+                    // Moss on top (if empty above)
+                    if (getTile(x, y-1) !== 1) {
+                        ctx.fillStyle = '#27ae60'; // Moss green
+                        ctx.fillRect(x * tileSize, y * tileSize, tileSize, 6);
+                        // Moss drips
+                        if ((x + y) % 3 === 0) {
+                            ctx.fillRect(x * tileSize + 4, y * tileSize + 6, 4, 6);
+                        }
                     }
                 }
 
             } else if (tile === 2) {
                 // Platform - Old Wood / Vines
-                ctx.fillStyle = game.currentEmotion.canPhase ? '#5d4037' : '#795548';
-                ctx.fillRect(x * tileSize, y * tileSize, tileSize, 8);
+                if (SPRITES.tiles.complete && SPRITES.tiles.naturalWidth !== 0) {
+                     // Draw Platform Sprite (Use 2nd tile if available, else reuse 1st)
+                     const img = SPRITES.tiles;
+                     const srcX = (img.width >= 64) ? 32 : 0;
+                     ctx.drawImage(img, srcX, 0, 32, 32, x * tileSize, y * tileSize, tileSize, tileSize);
+                } else {
+                    // Fallback Procedural
+                    ctx.fillStyle = game.currentEmotion.canPhase ? '#5d4037' : '#795548';
+                    ctx.fillRect(x * tileSize, y * tileSize, tileSize, 8);
+                }
 
                 if (game.currentEmotion.canPhase) {
                     // Dashed appearance when can phase through
