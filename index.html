@@ -185,7 +185,7 @@
         <div id="rewindIndicator">◀◀ REWINDING ◀◀</div>
 
         <div id="controls">
-            ARROWS to move · SPACE to jump (x2) · HOLD SHIFT to rewind
+            ARROWS to move · SPACE to jump (x2) · SHIFT to rewind · P for Debug
         </div>
 
         <div id="rewindOverlay"></div>
@@ -238,7 +238,8 @@ const CONFIG = {
     MAX_TIME_HISTORY: 1200, // Increased to 20 seconds
     REWIND_SPEED: 3,        // Rewind 3x faster
     FRICTION: 0.85,
-    AIR_RESISTANCE: 0.95
+    AIR_RESISTANCE: 0.95,
+    DEBUG: false
 };
 
 // -----------------------------------------------------------------------------
@@ -335,6 +336,10 @@ document.addEventListener('keydown', (e) => {
         case 'KeyR':
             if (game.won) location.reload();
             break;
+        case 'KeyP':
+            CONFIG.DEBUG = !CONFIG.DEBUG;
+            console.log(`Debug Mode: ${CONFIG.DEBUG ? 'ON' : 'OFF'}`);
+            break;
     }
 });
 
@@ -390,6 +395,7 @@ class Player {
         const emotion = game.currentEmotion;
         const speed = CONFIG.MOVE_SPEED * emotion.speedMod;
         const wasOnGround = this.onGround;
+        const prevAction = this.action;
 
         // Coyote Time (allow jumping shortly after falling off ledge)
         if (this.onGround) {
@@ -403,6 +409,16 @@ class Player {
         if (!this.onGround) this.action = 'jump';
         else if (Math.abs(this.vx) > 0.5) this.action = 'run';
         else this.action = 'idle';
+
+        // Debug Logging for Animation Tuning
+        if (CONFIG.DEBUG && this.action !== prevAction) {
+            console.log(`%c[ANIM] ${prevAction} ➔ ${this.action}`, 'color: #f1c40f; font-weight: bold;', {
+                vx: this.vx.toFixed(2),
+                vy: this.vy.toFixed(2),
+                onGround: this.onGround,
+                frame: this.frame
+            });
+        }
 
         // Animation Frame Ticking
         this.animTimer++;
@@ -671,6 +687,16 @@ class Player {
         ctx.shadowColor = emotion.color;
         ctx.shadowBlur = 20;
         ctx.restore();
+
+        // Debug Visuals
+        if (CONFIG.DEBUG) {
+            ctx.strokeStyle = '#ff00ff';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(this.x, this.y, this.width, this.height);
+            ctx.fillStyle = '#fff';
+            ctx.font = '10px monospace';
+            ctx.fillText(`${this.action} (${this.frame})`, this.x, this.y - 8);
+        }
     }
 }
 
