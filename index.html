@@ -427,28 +427,24 @@ class Player {
             this.animTimer = 0;
         }
 
-        // Squash and stretch recovery
-        this.scaleX = lerp(this.scaleX, 1, 0.2);
-        this.scaleY = lerp(this.scaleY, 1, 0.2);
+        // Squash and stretch recovery (subtle)
+        this.scaleX = lerp(this.scaleX, 1, 0.3);
+        this.scaleY = lerp(this.scaleY, 1, 0.3);
 
-        // Horizontal movement
+        // Horizontal movement - MEGA MAN STYLE (instant response)
         if (keys.left) {
-            this.vx -= speed * 0.3;
+            this.vx = -speed;  // Instant full speed
             this.facingRight = false;
-        }
-        if (keys.right) {
-            this.vx += speed * 0.3;
+        } else if (keys.right) {
+            this.vx = speed;   // Instant full speed
             this.facingRight = true;
-        }
-
-        // Clamp horizontal velocity
-        this.vx = Math.max(-speed, Math.min(speed, this.vx));
-
-        // Apply friction
-        if (this.onGround) {
-            this.vx *= CONFIG.FRICTION;
         } else {
-            this.vx *= CONFIG.AIR_RESISTANCE;
+            // Instant stop on ground, slight slide in air
+            if (this.onGround) {
+                this.vx = 0;
+            } else {
+                this.vx *= 0.95;  // Tiny air drift
+            }
         }
 
         // Jumping
@@ -470,8 +466,8 @@ class Player {
                 this.onGround = false;
                 this.jumpHeld = true;
                 spawnJumpParticles(this.x + this.width/2, this.y + this.height);
-                this.scaleX = 0.6;
-                this.scaleY = 1.4;
+                this.scaleX = 0.85;  // Subtle squash
+                this.scaleY = 1.15;  // Subtle stretch
             }
         }
         if (!keys.jump) {
@@ -502,11 +498,11 @@ class Player {
             this.respawn();
         }
 
-        // Landing impact
+        // Landing impact (subtle)
         if (!wasOnGround && this.onGround) {
-            this.scaleX = 1.4;
-            this.scaleY = 0.6;
-            game.shake = 4;
+            this.scaleX = 1.1;   // Subtle land squash
+            this.scaleY = 0.9;
+            game.shake = 2;      // Less shake
             spawnJumpParticles(this.x + this.width/2, this.y + this.height);
         }
     }
