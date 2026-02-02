@@ -423,12 +423,12 @@ class Player {
         // Animation Frame Ticking - different speeds per action
         this.animTimer++;
 
-        // Different timing per action
+        // Different timing per action - slowed down for smoother feel
         let frameDelay;
         if (this.action === 'idle') {
-            frameDelay = 15;  // Slow breathing (~250ms per frame)
+            frameDelay = 20;  // Slow breathing (~333ms per frame)
         } else if (this.action === 'run') {
-            frameDelay = 8;   // Medium (~133ms per frame)
+            frameDelay = 12;  // Smoother run (~200ms per frame)
         } else {
             frameDelay = 999; // Jump - don't cycle, hold frame 0
         }
