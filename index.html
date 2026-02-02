@@ -611,21 +611,32 @@ class Player {
         
         // CHECK: Do we have a sprite loaded?
         if (SPRITES.player.complete && SPRITES.player.naturalWidth !== 0) {
-            // Smart Sprite Drawing (Adapts to image size)
             const img = SPRITES.player;
-            const frameSize = 32;
             
-            // Determine row (Action) - Only if image has enough height
-            let row = 0;
-            if (img.height >= frameSize * 3) {
-                if (this.action === 'run') row = 1;
-                if (this.action === 'jump') row = 2;
-            }
+            // Heuristic: Is this a sprite sheet or a single image?
+            // Assume sprite sheet ONLY if it looks like a strip (Width >= 2x Height)
+            // OR if it matches our specific 32x32 grid template (128 width)
+            const isStrip = (img.width >= img.height * 2);
+            const isGrid = (img.width === 128 && img.height <= 96);
             
-            // Determine column (Frame) - Only if image has enough width
-            let col = 0;
-            if (img.width >= frameSize * 4) {
-                col = this.frame;
+            let srcX = 0, srcY = 0, srcW = img.width, srcH = img.height;
+            
+            if (isStrip || isGrid) {
+                const frameSize = 32;
+                let row = 0;
+                if (img.height >= 96) {
+                    if (this.action === 'run') row = 1;
+                    if (this.action === 'jump') row = 2;
+                }
+                
+                // Cycle frames safely
+                const numFrames = Math.floor(img.width / frameSize) || 1;
+                const col = this.frame % numFrames;
+                
+                srcX = col * frameSize;
+                srcY = row * frameSize;
+                srcW = frameSize;
+                srcH = frameSize;
             }
             
             // Flip sprite if facing left
@@ -633,8 +644,8 @@ class Player {
             ctx.scale(this.facingRight ? 1 : -1, 1);
             ctx.drawImage(
                 img,
-                col * frameSize, row * frameSize, frameSize, frameSize, // Source
-                -16, -32, 32, 32                   // Destination (centered on feet)
+                srcX, srcY, srcW, srcH, // Source
+                -16, -32, 32, 32        // Destination (centered on feet)
             );
             ctx.restore();
         } else {
