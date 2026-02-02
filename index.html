@@ -420,10 +420,27 @@ class Player {
             });
         }
 
-        // Animation Frame Ticking
+        // Animation Frame Ticking - different speeds per action
         this.animTimer++;
-        if (this.animTimer > 6) { // ~10 FPS
-            this.frame = (this.frame + 1) % 4; // Assuming 4 frames per row
+
+        // Different timing per action
+        let frameDelay;
+        if (this.action === 'idle') {
+            frameDelay = 15;  // Slow breathing (~250ms per frame)
+        } else if (this.action === 'run') {
+            frameDelay = 8;   // Medium (~133ms per frame)
+        } else {
+            frameDelay = 999; // Jump - don't cycle, hold frame 0
+        }
+
+        if (this.animTimer > frameDelay) {
+            this.frame = (this.frame + 1) % 4;
+            this.animTimer = 0;
+        }
+
+        // Reset frame when action changes
+        if (this.action !== prevAction) {
+            this.frame = 0;
             this.animTimer = 0;
         }
 
