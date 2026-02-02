@@ -427,9 +427,9 @@ class Player {
             this.animTimer = 0;
         }
 
-        // Squash and stretch recovery (subtle)
-        this.scaleX = lerp(this.scaleX, 1, 0.3);
-        this.scaleY = lerp(this.scaleY, 1, 0.3);
+        // No squash/stretch - solid like Mega Man
+        this.scaleX = 1;
+        this.scaleY = 1;
 
         // Horizontal movement - MEGA MAN STYLE (instant response)
         if (keys.left) {
@@ -466,8 +466,6 @@ class Player {
                 this.onGround = false;
                 this.jumpHeld = true;
                 spawnJumpParticles(this.x + this.width/2, this.y + this.height);
-                this.scaleX = 0.85;  // Subtle squash
-                this.scaleY = 1.15;  // Subtle stretch
             }
         }
         if (!keys.jump) {
@@ -498,11 +496,8 @@ class Player {
             this.respawn();
         }
 
-        // Landing impact (subtle)
+        // Landing impact - particles only, no wobble
         if (!wasOnGround && this.onGround) {
-            this.scaleX = 1.1;   // Subtle land squash
-            this.scaleY = 0.9;
-            game.shake = 2;      // Less shake
             spawnJumpParticles(this.x + this.width/2, this.y + this.height);
         }
     }
